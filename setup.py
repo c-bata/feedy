@@ -1,38 +1,31 @@
 import os
-from setuptools import setup, find_packages
-
-BASE_PATH = os.path.dirname(__file__)
-README = open(os.path.join(BASE_PATH, 'README.rst')).read()
-CHANGES = open(os.path.join(BASE_PATH, 'CHANGES.rst')).read()
-
-__author__ = 'Masashi Shibata <contact@c-bata.link>'
-__version__ = '0.0.0'
-__license__ = 'MIT License'
-__author_email__ = 'contact@c-bata.link'
-__url__ = 'https://github.com/c-bata/feedy'
-__description__ = 'Decorator-based RSS Feed Fetcher for Python3'
-__classifiers__ = [
-    'Development Status :: 1 - Planning',
-    'Environment :: Console',
-    'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3 :: Only',
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
-]
+from setuptools import find_packages, setup
 
 setup(
     name='feedy',
-    version=__version__,
-    author=__author__,
-    author_email=__author_email__,
-    url=__url__,
-    description=__description__,
-    long_description=README + '\n\n' + CHANGES,
-    packages=find_packages(exclude=['test*']),
-    install_requirements=[],
+    version='0.0.0',
+    author='Masashi Shibata <contact@c-bata.link>',
+    author_email='contact@c-bata.link',
+    url='https://github.com/c-bata/feedy',
+    description='Decorator-based RSS Feed Fetcher for Python3',
+    license='MIT License',
     keywords='rss feed',
-    license=__license__,
+    long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
+    classifiers=[
+        'Development Status :: 1 - Planning',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+    ],
+    packages=find_packages(),
+    entry_points={
+        'console_scripts': ['feedy = feedy:cmd']
+    },
+    install_requirements=['feedparser'],
     include_package_data=True,
+    test_suite="tests",
 )

@@ -13,29 +13,48 @@ Usage
     from feedy import Feedy
     from bs4 import BeautifulSoup
 
-    feed = Feedy()
+    feedy = Feedy('./history.dat')
 
-    @feed.add('http://rss/feed/url’)
-    def feed_name(fetch_info, response):
-        """
-        :param fetch_info: It has some information(url, title, description, fetched_at)
-        :param response: The result of requests.get('article url')
-        """
-        soup = BeautifulSoup(response.body)  # You can select your favorite html parser.
-        #
-        # Storing in DB
+    @feedy.add('http://rss/feed/url’)
+    def site_a(feed_info, entry_info, body):
+        soup = BeautifulSoup(body)  # You can select your favorite html parser.
+
+        # Storing in DB or Output to console like:
+        print(feed_info['title'], ':', entry_info['title'])
+
+        # Get image urls:
+        for x in soup.find_all('img'):
+            print(x['src'])
 
 And execute following command from the job of crontab:
 
 ::
 
-    $ feedy feed_name -o result.json
+    $ feedy filename:feedy -t site_a
+
+
+Command Line Interface
+======================
+
+::
+
+    $ feedy -h
+    usage: Run your feedy's project flexibly. [-h] [-t TARGET [TARGET ...]] obj
+
+    positional arguments:
+      obj                   Specify feedy object (style. <filename:obj>)
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -t TARGET [TARGET ...], --target TARGET [TARGET ...]
+                            The target function names
+
+
 
 Requirements
 ============
 
-* beautifulsoup4
-* requets
+* feedparser
 
 
 Resources
