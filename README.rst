@@ -13,15 +13,15 @@ Usage
     from feedy import Feedy
     from bs4 import BeautifulSoup
 
-    feed = Feedy()
+    feedy = Feedy('./history.dat')
 
-    @feed.add('http://rss/feed/url’)
-    def feed_name(fetch_info, response):
+    @feedy.add('http://rss/feed/url’)
+    def site_a(fetch_info, body):
         """
         :param fetch_info: It has some information(url, title, description, fetched_at)
         :param response: The result of requests.get('article url')
         """
-        soup = BeautifulSoup(response.body)  # You can select your favorite html parser.
+        soup = BeautifulSoup(body)  # You can select your favorite html parser.
         #
         # Storing in DB
 
@@ -29,13 +29,21 @@ And execute following command from the job of crontab:
 
 ::
 
-    $ feedy feed_name -o result.json
+    $ feedy filename:feedy site_name
+
+
+Command Line Interface
+======================
+
+::
+
+    feedy
+
 
 Requirements
 ============
 
-* beautifulsoup4
-* requets
+* feedparser
 
 
 Resources
