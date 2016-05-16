@@ -25,6 +25,11 @@ Usage
         #
         # Storing in DB
 
+And execute following command from the job of crontab:
+
+::
+
+    $ feedy feed_name -o result.json
 
 Requirements
 ============
@@ -37,3 +42,4 @@ Resources
 =========
 
 * `Github <https://github.com/c-bata/feedy>`_
+* `PyPI <https://pypi.python.org/pypi/feedy>`_
