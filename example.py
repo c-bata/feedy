@@ -1,7 +1,10 @@
 from feedy import Feedy
+from feedy_plugins import social_share_plugin, NewestEntryPlugin
 from bs4 import BeautifulSoup
 
-feedy = Feedy('./feedy.dat')
+feedy = Feedy()
+feedy.install(social_share_plugin)
+feedy.install(NewestEntryPlugin())
 
 
 @feedy.add('http://nwpct1.hatenablog.com/rss')

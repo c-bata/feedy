@@ -54,6 +54,7 @@ def _get_entry_body(entry):
 
 class Feedy:
     feeds = {}
+    plugins = []
     store = None
 
     def __init__(self, history_file=None, max_entries=None, store=None):
@@ -68,6 +69,11 @@ class Feedy:
 
         self.max_entries = max_entries
 
+    def install(self, plugin):
+        if hasattr(plugin, 'setup'):
+            plugin.setup(self)
+        self.plugins.append(plugin)
+
     def add(self, feed_url, callback=None):
         def decorator(callback_func):
             self.add_feed(feed_url, callback_func)
@@ -77,10 +83,28 @@ class Feedy:
     def add_feed(self, feed_url, callback):
         self.feeds[callback.__name__] = (feed_url, callback)
 
-    def _handle(self, callback, entry, feed_info, **kw):
+    def entry_handler(self, callback, entry, feed_info):
+        for plugin in self.plugins:
+            if callable(plugin):
+                callback = plugin(callback)
+
         entry_info = _get_entry_info(entry)
         body = _get_entry_body(entry)
-        callback(feed_info=feed_info, entry_info=entry_info, body=body, **kw)
+        callback(feed_info=feed_info, entry_info=entry_info, body=body)
+
+    def feed_handler(self, callback, feed_info, entries):
+        if self.store:
+            last_fetched = self.store.load('{feed_name}_fetched_at'.format(feed_name=callback.__name__))
+        if self.max_entries:
+            entries = entries[:self.max_entries]
+
+        for entry in entries:
+            if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
+                continue
+            self.entry_handler(callback, entry, feed_info)
+
+        if self.store:
+            self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__), datetime.now())
 
     def run(self, targets):
         if targets == 'all':
@@ -89,20 +113,7 @@ class Feedy:
         for target in targets:
             feed_url, callback = self.feeds[target]
             feed_info, entries = _fetch_feed(feed_url)
-
-            if self.store:
-                last_fetched = self.store.load('{feed_name}_fetched_at'.format(feed_name=callback.__name__))
-            if self.max_entries:
-                entries = entries[:self.max_entries]
-
-            for entry in entries:
-                if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
-                    continue
-                self._handle(callback, entry, feed_info)
-
-            if self.store:
-                self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__),
-                                            datetime.now())
+            self.feed_handler(callback, feed_info, entries)
 
 
 def cmd():

@@ -21,6 +21,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
+    packages=['feedy_plugins'],
     py_modules=['feedy'],
     entry_points={
         'console_scripts': ['feedy = feedy:cmd']
