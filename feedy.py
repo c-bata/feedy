@@ -9,6 +9,7 @@ from urllib import request
 import feedparser
 
 
+# Store fetched datetime ########################################
 class ShelveStore:
     def __init__(self, file_path):
         self.file_path = file_path
@@ -22,6 +23,7 @@ class ShelveStore:
             return db.get(key, None)
 
 
+# Fetch feed, entry      ########################################
 def _fetch_feed(feed_url):
     parsed = feedparser.parse(feed_url)
     feed = parsed.feed
@@ -116,6 +118,7 @@ class Feedy:
             self.feed_handler(callback, feed_info, entries)
 
 
+# Command Line Interface ######################################################
 def cmd():
     parser = argparse.ArgumentParser("Run your feedy's project flexibly.")
     parser.add_argument('obj', type=str, nargs=None, help="Feedy's object like: <filename>:<obj>")
