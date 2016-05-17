@@ -1,10 +1,24 @@
 import argparse
 import importlib
+import shelve
 from datetime import datetime
 from time import mktime
 from urllib import request
 
 import feedparser
+
+
+class ShelveStore:
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def update_or_create(self, key, value):
+        with shelve.open(self.file_path) as db:
+            db[key] = value
+
+    def load(self, key):
+        with shelve.open(self.file_path) as db:
+            return db.get(key, None)
 
 
 def _fetch_feed(feed_url):
@@ -39,9 +53,19 @@ def _get_entry_body(entry):
 
 class Feedy:
     feeds = {}
+    store = None
 
-    def __init__(self, history_file):
-        self.history_file = history_file
+    def __init__(self, history_file=None, max_entries=None, store=None):
+        if history_file and store:
+            pass
+        elif store:
+            self.store = store
+        elif history_file:
+            self.store = ShelveStore(history_file)
+        else:
+            self.store = None
+
+        self.max_entries = max_entries
 
     def add(self, feed_url, callback=None):
         def decorator(callback_func):
@@ -65,8 +89,19 @@ class Feedy:
             feed_url, callback = self.feeds[target]
             feed_info, entries = _fetch_feed(feed_url)
 
+            if self.store:
+                last_fetched = self.store.load('{feed_name}_fetched_at'.format(feed_name=callback.__name__))
+            if self.max_entries:
+                entries = entries[:self.max_entries]
+
             for entry in entries:
+                if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
+                    continue
                 self._handle(callback, entry, feed_info)
+
+            if self.store:
+                self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__),
+                                            datetime.now())
 
 
 def cmd():
