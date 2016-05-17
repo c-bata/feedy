@@ -1,9 +1,9 @@
 import os
-from setuptools import find_packages, setup
+from setuptools import setup
 
 setup(
     name='feedy',
-    version='0.0.0',
+    version='0.0.1',
     author='Masashi Shibata <contact@c-bata.link>',
     author_email='contact@c-bata.link',
     url='https://github.com/c-bata/feedy',
@@ -21,7 +21,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-    packages=find_packages(),
+    py_modules=['feedy'],
     entry_points={
         'console_scripts': ['feedy = feedy:cmd']
     },
