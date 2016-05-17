@@ -25,7 +25,7 @@ setup(
     entry_points={
         'console_scripts': ['feedy = feedy:cmd']
     },
-    install_requirements=['feedparser'],
+    install_requires=['feedparser'],
     include_package_data=True,
     test_suite="tests",
 )
