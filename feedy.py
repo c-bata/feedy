@@ -1,5 +1,6 @@
 import argparse
-import importlib
+import types
+import os
 import shelve
 from datetime import datetime
 from time import mktime
@@ -110,7 +111,11 @@ def cmd():
     parser.add_argument('-t', '--target', type=str, nargs='+', default='all', help='The target function names')
     args = parser.parse_args()
 
-    mod_name, obj = args.obj.split(':')
-    mod = importlib.import_module(mod_name)
-    runner = getattr(mod, obj)
+    file_name, obj = args.obj.split(':')
+    t = types.ModuleType('runner')
+    file_path = os.path.abspath(file_name)
+    file_path = file_path + '.py' if not file_path.endswith('.py') else file_path
+    with open(file_path) as mod:
+        exec(compile(mod.read(), file_path, 'exec'), t.__dict__)
+    runner = getattr(t, obj)
     runner.run(args.target)
