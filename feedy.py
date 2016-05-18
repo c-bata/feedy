@@ -59,15 +59,11 @@ class Feedy:
     plugins = []
     store = None
 
-    def __init__(self, history_file=None, max_entries=None, store=None):
-        if history_file and store:
-            pass
-        elif store:
+    def __init__(self, store=None, max_entries=None):
+        if hasattr(store, 'update_or_create') or hasattr(store, 'load'):
             self.store = store
-        elif history_file:
-            self.store = ShelveStore(history_file)
-        else:
-            self.store = None
+        elif isinstance(store, str):
+            self.store = ShelveStore(store)
 
         self.max_entries = max_entries
 
