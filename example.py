@@ -9,11 +9,15 @@ feedy.install(social_share_plugin)
 @feedy.add('http://nwpct1.hatenablog.com/rss')
 def c_bata_web(feed_info, entry_info, body, social_count):
     """Get image urls in my blog's article"""
-    print('=============================')
-    print('Title: ', entry_info['title'])
-    print('HatenaBookmark: ', social_count.get('hatebu_count'))
-    print('Pocket: ', social_count.get('pocket_count'))
-    print('Facebook: ', social_count.get('facebook_count'))
+    article = {
+        'url': entry_info['link'],
+        'title': entry_info['title'],
+        'hatebu': social_count['hatebu_count'],
+        'pocket': social_count['pocket_count'],
+        'facebook': social_count['facebook_count'],
+    }
+    # store article
+    print(article)
 
 
 @feedy.add('https://www.djangopackages.com/feeds/packages/latest/rss/')

@@ -83,8 +83,7 @@ class Feedy:
 
     def entry_handler(self, callback, entry, feed_info):
         for plugin in self.plugins:
-            if callable(plugin):
-                callback = plugin(callback)
+            callback = plugin(callback) if callable(plugin) else callback
 
         entry_info = _get_entry_info(entry)
         body = _get_entry_body(entry)
