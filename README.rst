@@ -73,13 +73,6 @@ Command Line Interface
                             The target function names
 
 
-
-Requirements
-============
-
-* feedparser
-
-
 Resources
 =========
 

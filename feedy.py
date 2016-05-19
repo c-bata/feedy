@@ -1,4 +1,3 @@
-import argparse
 import types
 import os
 import shelve
@@ -6,6 +5,7 @@ from datetime import datetime
 from time import mktime
 from urllib import request
 
+import click
 import feedparser
 
 
@@ -103,28 +103,46 @@ class Feedy:
         if self.store:
             self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__), datetime.now())
 
-    def run(self, targets):
-        if targets == 'all':
-            targets = self.feeds.keys()
+    def run(self, target='all', store_file=None, max_entries=None):
+        if target == 'all':
+            target = self.feeds.keys()
+        if store_file:
+            self.store = ShelveStore(store_file)
+        if max_entries is not None:
+            self.max_entries = max_entries
 
-        for target in targets:
-            feed_url, callback = self.feeds[target]
+        for t in target:
+            feed_url, callback = self.feeds[t]
             feed_info, entries = _fetch_feed(feed_url)
             self.feed_handler(callback, feed_info, entries)
 
 
 # Command Line Interface ######################################################
-def cmd():
-    parser = argparse.ArgumentParser("Run your feedy's project flexibly.")
-    parser.add_argument('obj', type=str, nargs=None, help="Feedy's object like: <filename>:<obj>")
-    parser.add_argument('-t', '--target', type=str, nargs='+', default='all', help='The target function names')
-    args = parser.parse_args()
-
-    file_name, obj = args.obj.split(':')
+def _get_runner(feedy_obj):
+    file_name, obj = feedy_obj.split(':')
     t = types.ModuleType('runner')
     file_path = os.path.abspath(file_name)
     file_path = file_path + '.py' if not file_path.endswith('.py') else file_path
     with open(file_path) as mod:
         exec(compile(mod.read(), file_path, 'exec'), t.__dict__)
     runner = getattr(t, obj)
-    runner.run(args.target)
+    return runner
+
+
+def remove_empty_arguments(callback):
+    def wrapper(*args, **kwargs):
+        kw = {k: v for k, v in kwargs.items() if v is not None}
+        return callback(*args, **kw)
+    return wrapper
+
+
+@click.command()
+@click.argument('feedy_obj')
+@click.option('--target', '-t', type=str, multiple=True, help='The target function names.')
+@click.option('--store_file', '-s', help='A filename for store the fetched data.')
+@click.option('--max_entries', help="The maximum length for fetching entries every RSS feed")
+@remove_empty_arguments
+def cmd(feedy_obj, **kwargs):
+    """Run your feedy's project flexibly."""
+    runner = _get_runner(feedy_obj)
+    runner.run(**kwargs)
