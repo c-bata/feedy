@@ -8,6 +8,7 @@ A plugin for getting social share counts.
 
 import json
 from urllib import parse, request
+from functools import wraps
 
 from bs4 import BeautifulSoup
 
@@ -61,6 +62,7 @@ def _get_hatebu_count(url):
 
 
 def social_share_plugin(callback):
+    @wraps(callback)
     def wrapper(*args, **kwargs):
         social_count = {}
         url = kwargs['entry_info']['link']

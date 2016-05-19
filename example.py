@@ -21,7 +21,7 @@ def c_bata_web(feed_info, entry_info, body, social_count):
 
 
 @feedy.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-def djangopackages(feed_info, entry_info, body, **kw):
+def djangopackages(feed_info, entry_info, body):
     """Get the latest django library information."""
     print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
 
