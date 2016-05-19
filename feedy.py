@@ -1,12 +1,15 @@
 import types
-import os
 import shelve
 from datetime import datetime
 from time import mktime
 from urllib import request
+from logging import getLogger, INFO, DEBUG, WARNING, ERROR
+from functools import wraps
 
 import click
 import feedparser
+
+logger = getLogger(__name__)
 
 
 # Store fetched datetime ########################################
@@ -103,46 +106,52 @@ class Feedy:
         if self.store:
             self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__), datetime.now())
 
-    def run(self, target='all', store_file=None, max_entries=None):
-        if target == 'all':
-            target = self.feeds.keys()
+    def run(self, targets=(), store_file=None, max_entries=None):
+        if len(targets) == 0:
+            targets = self.feeds.keys()
         if store_file:
             self.store = ShelveStore(store_file)
         if max_entries is not None:
             self.max_entries = max_entries
 
-        for t in target:
+        for t in targets:
             feed_url, callback = self.feeds[t]
             feed_info, entries = _fetch_feed(feed_url)
             self.feed_handler(callback, feed_info, entries)
 
 
 # Command Line Interface ######################################################
-def _get_runner(feedy_obj):
-    file_name, obj = feedy_obj.split(':')
+def _get_runner(src, obj):
     t = types.ModuleType('runner')
-    file_path = os.path.abspath(file_name)
-    file_path = file_path + '.py' if not file_path.endswith('.py') else file_path
-    with open(file_path) as mod:
-        exec(compile(mod.read(), file_path, 'exec'), t.__dict__)
+    with src as mod:
+        exec(compile(mod.read(), src.name, 'exec'), t.__dict__)
     runner = getattr(t, obj)
     return runner
 
 
 def remove_empty_arguments(callback):
+    @wraps(callback)
     def wrapper(*args, **kwargs):
         kw = {k: v for k, v in kwargs.items() if v is not None}
         return callback(*args, **kw)
     return wrapper
 
 
+def set_logger_level(verbose):
+    logger_level = (ERROR, WARNING, INFO, DEBUG)
+    logger.setLevel(logger_level[verbose])
+
+
 @click.command()
-@click.argument('feedy_obj')
-@click.option('--target', '-t', type=str, multiple=True, help='The target function names.')
-@click.option('--store_file', '-s', help='A filename for store the fetched data.')
-@click.option('--max_entries', help="The maximum length for fetching entries every RSS feed")
+@click.option('-v', '--verbose', type=click.IntRange(0, 3), count=True, help='Set log level')
+@click.option('-t', '--targets', type=str, multiple=True, help='The target function names.')
+@click.option('-s', '--store_file', type=str, help='A filename for store the fetched data.')
+@click.option('-m', '--max_entries', type=int, help="The maximum length for fetching entries every RSS feed")
+@click.argument('src', type=click.File('r'), nargs=1)
+@click.argument('obj', nargs=1)
 @remove_empty_arguments
-def cmd(feedy_obj, **kwargs):
+def cmd(src, obj, verbose, **kwargs):
     """Run your feedy's project flexibly."""
-    runner = _get_runner(feedy_obj)
+    set_logger_level(verbose)
+    runner = _get_runner(src, obj)
     runner.run(**kwargs)
