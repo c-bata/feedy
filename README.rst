@@ -5,7 +5,6 @@ Feedy
 Simple RSS Feed Fetching Framework.
 
 
-=========
 Tutorials
 =========
 
@@ -19,8 +18,8 @@ Supported python version is Python3.
     pip install feedy
 
 
-1. Getting feed entry's title and link
---------------------------------------
+1. Getting feed entry's title and link URL
+------------------------------------------
 
 Creating ``main.py`` like:
 
@@ -32,7 +31,6 @@ Creating ``main.py`` like:
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
     def djangopackages(feed_info, entry_info, body):
-        """Get the latest django library information."""
         print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
 
     if __name__ == '__main__':
@@ -183,7 +181,7 @@ You can easy developing by using plugins.
 For example, you can get shared count in social sns like facebook and pocket.
 There are two ways for applying the plugin.
 
-**apply specified function using decorator**
+**Apply specified function using decorator**
 
 .. code-block:: python
 
@@ -209,7 +207,7 @@ And running:
     {'title': 'Security fears over French airports', 'pocket': 2, 'facebook': 9}
 
 
-**apply all functions with ``.install()``**
+**Apply all functions with ``.install()``**
 
 .. code-block:: python
 
@@ -229,7 +227,7 @@ And running:
         }
         print(article)
 
-    @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/', social_count)
+    @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
     def djangopackages(feed_info, entry_info, body, social_count):
         print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
         print(social_count['pocket_count'])
@@ -238,7 +236,6 @@ And running:
         app.run()
 
 
-==============
 Create Plugins
 ==============
 
@@ -246,7 +243,7 @@ To write a new plugin, simply create decorator like:
 
 .. code-block:: python
 
-    def social_share_plugin(callback):
+    def add_information_plugin(callback):
         @wraps(callback)
         def wrapper(*args, **kwargs):
             additional_info = "This is custom plugin."
@@ -257,7 +254,7 @@ To write a new plugin, simply create decorator like:
 
 Happy hacking :)
 
-=========
+
 Resources
 =========
 
