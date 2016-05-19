@@ -49,12 +49,15 @@ def _get_hatebu_count(url):
     ]
     with request.urlopen(base_url + parse.urlencode(params)) as response:
         res = json.loads(response.read().decode('utf-8'))
+    if res is None:
+        # Sometimes, it cannot get response.
+        return {'hatebu_count': None, 'hatebu_related': None, 'hatebu_bookmarks': None, 'hatebu_screenshot': None}
     return {
         'hatebu_count': res.get('count'),
         'hatebu_related': res.get('related'),
         'hatebu_bookmarks': res.get('bookmarks'),
         'hatebu_screenshot': res.get('screenshot'),
-    } if res else {}
+    }
 
 
 def social_share_plugin(callback):
