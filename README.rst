@@ -42,6 +42,9 @@ After that, please execute a following command:
     - [fluentcms-contactform](http://www.djangopackages.com/packages/p/fluentcms-contactform/)
     - [fluentcms-pager](http://www.djangopackages.com/packages/p/fluentcms-pager/)
 
+
+::
+
     $ feedy example:feedy  # Run all when given no target arguments.
     - [django-simple-address](http://www.djangopackages.com/packages/p/django-simple-address/)
     - [django-db-sanitizer](http://www.djangopackages.com/packages/p/django-db-sanitizer/)
