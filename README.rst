@@ -2,11 +2,21 @@
 Feedy
 =====
 
-Feedy is RSS Feed Fetching Framework
+Simple RSS Feed Fetching Framework.
 
 
 Tutorials
 =========
+
+0. Installation
+===============
+
+Supported python version is Python3.
+
+::
+
+    pip install feedy
+
 
 1. Getting feed entry's title and link
 --------------------------------------
