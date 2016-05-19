@@ -5,11 +5,12 @@ Feedy
 Simple RSS Feed Fetching Framework.
 
 
+=========
 Tutorials
 =========
 
 0. Installation
-===============
+---------------
 
 Supported python version is Python3.
 
@@ -77,16 +78,16 @@ And running:
     - [django-db-sanitizer](http://www.djangopackages.com/packages/p/django-db-sanitizer/)
     :
     :
-    $ python main.py
+    $ python main.py  # This is no output because There are no newest feed.
     $
 
 It displays only newest feed entries.
 
 
-3. Add feed
------------
+3. Add feed patterns
+--------------------
 
-Add CNN news feed and collect images on each articles.
+Add CNN news feed for collecting images on each articles.
 
 .. code-block:: python
 
@@ -153,7 +154,7 @@ Feedy offers command line interface. It's useful for debugging
       --help                          Show this message and exit.
 
 
-
+If you want to get specified entry for debugging, please execute following command:
 
 ::
 
@@ -163,9 +164,11 @@ Feedy offers command line interface. It's useful for debugging
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_money.png
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_style.png
 
+And if you want to run only a cnn function, please execute:
+
 ::
 
-    $ feedy main.py app --store tmp.dat --target cnn --max-entries 2
+    $ feedy main.py app --max-entries 2 --no-ignore-fetched --target cnn
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_money.png
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_style.png
 
@@ -235,6 +238,7 @@ And running:
         app.run()
 
 
+==============
 Create Plugins
 ==============
 
@@ -253,6 +257,7 @@ To write a new plugin, simply create decorator like:
 
 Happy hacking :)
 
+=========
 Resources
 =========
 

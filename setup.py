@@ -3,11 +3,11 @@ from setuptools import setup
 
 setup(
     name='feedy',
-    version='0.0.1',
+    version='0.0.2',
     author='Masashi Shibata <contact@c-bata.link>',
     author_email='contact@c-bata.link',
     url='https://github.com/c-bata/feedy',
-    description='Decorator-based RSS Feed Fetcher for Python3',
+    description='Simple RSS feed fetching framework',
     license='MIT License',
     keywords='rss feed',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
