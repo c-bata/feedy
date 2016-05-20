@@ -1,3 +1,4 @@
+import os
 import types
 import shelve
 from datetime import datetime
@@ -5,9 +6,11 @@ from time import mktime
 from urllib import request
 from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, ERROR
 from functools import wraps
+import shutil
 
 import click
 import feedparser
+import requests
 
 # Default run parameters #######################################
 DEFAULT_RUN_PARAMS = {
@@ -29,7 +32,7 @@ def _create_logger(name):
 logger = _create_logger(__name__)
 
 
-# Store fetched datetime ########################################
+# Shelve store            ########################################
 class ShelveStore:
     def __init__(self, file_path):
         self.file_path = file_path
@@ -41,6 +44,23 @@ class ShelveStore:
     def load(self, key):
         with shelve.open(self.file_path) as db:
             return db.get(key, None)
+
+
+# Utils                  ########################################
+def get_image_abs_path(domain, img_src):
+    abs_path = img_src if img_src.startswith('http') else domain + img_src
+    return abs_path
+
+
+def download_image(domain, img_tag, filename, directory=None):
+    image_abs_path = get_image_abs_path(domain, img_tag['src'])
+    r = requests.get(image_abs_path, stream=True)
+    if r.status_code == 200:
+        ext = img_tag['src'].split('.')[-1]
+        filepath = os.path.join(directory, filename) if directory else filename
+        with open('{filepath}.{ext}'.format(filepath=filepath, ext=ext), 'wb') as f:
+            r.raw_decode_content = True
+            shutil.copyfileobj(r.raw, f)
 
 
 # Fetch feed, entry      ########################################
