@@ -3,13 +3,23 @@ import shelve
 from datetime import datetime
 from time import mktime
 from urllib import request
-from logging import getLogger, INFO, DEBUG, WARNING, ERROR
+from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, ERROR
 from functools import wraps
 
 import click
 import feedparser
 
-logger = getLogger(__name__)
+
+# Logger settings       ########################################
+def _create_logger(name):
+    formatter = Formatter('[%(levelname)s] %(message)s')
+    sh = StreamHandler()
+    sh.setFormatter(formatter)
+    logger = getLogger(name)
+    logger.addHandler(sh)
+    return logger
+
+logger = _create_logger(__name__)
 
 
 # Store fetched datetime ########################################
@@ -62,11 +72,18 @@ class Feedy:
     plugins = []
     store = None
 
-    def __init__(self, store=None, max_entries=None, ignore_fetched=False):
+    def __init__(self, store=None):
         if store:
             self.set_store(store)
-        self.max_entries = max_entries
-        self.ignore_fetched = ignore_fetched
+
+    def set_store(self, store):
+        """ Set store """
+        if hasattr(store, 'update_or_create') or hasattr(store, 'load'):
+            self.store = store
+        elif isinstance(store, str):
+            self.store = ShelveStore(store)
+        else:
+            raise TypeError("Store must be string or implement ``.update_or_create()`` and ``load()``.")
 
     def install(self, plugin):
         if hasattr(plugin, 'setup'):
@@ -91,50 +108,37 @@ class Feedy:
         body = _get_entry_body(entry)
         callback(feed_info=feed_info, entry_info=entry_info, body=body)
 
-    def feed_handler(self, callback, feed_info, entries):
-        if not self.ignore_fetched:
+    def feed_handler(self, callback, feed_info, entries, max_entries=None, ignore_fetched=None):
+        if not ignore_fetched:
             if self.store:
                 last_fetched = self.store.load('{feed_name}_fetched_at'.format(feed_name=callback.__name__))
             else:
                 logger.error("A ignore_fetched is True, but store is not set.")
-        if self.max_entries:
-            entries = entries[:self.max_entries]
+        if max_entries:
+            entries = entries[:max_entries]
 
         for entry in entries:
             if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
                 continue
             self.entry_handler(callback, entry, feed_info)
 
-        if not self.ignore_fetched:
+        if not ignore_fetched:
             if self.store:
                 self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__),
                                             datetime.now())
             else:
                 logger.error("A ignore_fetched is True, but store is not set.")
 
-    def set_store(self, store):
-        """ Set store """
-        if hasattr(store, 'update_or_create') or hasattr(store, 'load'):
-            self.store = store
-        elif isinstance(store, str):
-            self.store = ShelveStore(store)
-        else:
-            raise TypeError("Store must be string or implement ``.update_or_create()`` and ``load()``.")
+    def run(self, **kwargs):
+        if 'targets' not in kwargs or not kwargs['targets']:
+            kwargs['targets'] = self.feeds.keys()
 
-    def run(self, targets=None, store=None, max_entries=None, ignore_fetched=None):
-        if targets is None:
-            targets = self.feeds.keys()
-        if store:
-            self.store = ShelveStore(store)
-        if max_entries is not None:
-            self.max_entries = max_entries
-        if ignore_fetched != self.ignore_fetched:
-            self.ignore_fetched = ignore_fetched
-
-        for t in targets:
+        for t in kwargs['targets']:
             feed_url, callback = self.feeds[t]
             feed_info, entries = _fetch_feed(feed_url)
-            self.feed_handler(callback, feed_info, entries)
+            self.feed_handler(callback, feed_info, entries,
+                              max_entries=kwargs.get('max_entries'),
+                              ignore_fetched=kwargs.get('max_entries'))
 
 
 # Command Line Interface ######################################################
@@ -154,13 +158,11 @@ def set_logger_level(verbose):
 def wrangle_arg(kwargs):
     kw = {}
     for k, v in kwargs.items():
-        if k == 'targets' and v != ():
+        if k == 'targets' and len(v) != 0:
+            kw['targets'] = v
+        if k == 'max_entries' and v is not None:
             kw[k] = v
-        if k == 'store' and v is not None:
-            kw[k] = v
-        if k == 'max-entries' and v is not None:
-            kw[k] = v
-        if k == 'ignore-fetched' and v is not None:
+        if k == 'ignore_fetched' and v is not None:
             kw[k] = v
     return kw
 
@@ -170,7 +172,6 @@ def wrangle_arg(kwargs):
 @click.argument('obj', nargs=1)
 @click.option('-v', '--verbose', type=click.IntRange(0, 3), count=True, help='Set log level')
 @click.option('-t', '--targets', type=str, multiple=True, help='The target function names.')
-@click.option('-s', '--store', type=str, help='A filename for store the last fetched time each RSS feed.')
 @click.option('-m', '--max-entries', type=int, help="The maximum length for fetching entries every RSS feed")
 @click.option('--ignore-fetched/--no-ignore-fetched', help="The maximum length for fetching entries every RSS feed")
 def cmd(src, obj, verbose, **kwargs):
