@@ -9,8 +9,15 @@ from functools import wraps
 import click
 import feedparser
 
+# Default run parameters #######################################
+DEFAULT_RUN_PARAMS = {
+    'targets': None,
+    'max_entries': None,
+    'ignore_fetched': False,
+}
 
-# Logger settings       ########################################
+
+# Logger settings        #######################################
 def _create_logger(name):
     formatter = Formatter('[%(levelname)s] %(message)s')
     sh = StreamHandler()
@@ -108,8 +115,10 @@ class Feedy:
         body = _get_entry_body(entry)
         callback(feed_info=feed_info, entry_info=entry_info, body=body)
 
-    def feed_handler(self, callback, feed_info, entries, max_entries=None, ignore_fetched=None):
-        if not ignore_fetched:
+    def feed_handler(self, callback, feed_info, entries,
+                     max_entries=DEFAULT_RUN_PARAMS['max_entries'],
+                     ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
+        if ignore_fetched:
             if self.store:
                 last_fetched = self.store.load('{feed_name}_fetched_at'.format(feed_name=callback.__name__))
             else:
@@ -122,23 +131,24 @@ class Feedy:
                 continue
             self.entry_handler(callback, entry, feed_info)
 
-        if not ignore_fetched:
+        if ignore_fetched:
             if self.store:
                 self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__),
                                             datetime.now())
             else:
                 logger.error("A ignore_fetched is True, but store is not set.")
 
-    def run(self, **kwargs):
-        if 'targets' not in kwargs or not kwargs['targets']:
-            kwargs['targets'] = self.feeds.keys()
+    def run(self, targets=DEFAULT_RUN_PARAMS['targets'],
+            max_entries=DEFAULT_RUN_PARAMS['max_entries'],
+            ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
 
-        for t in kwargs['targets']:
+        if not targets:
+            targets = self.feeds.keys()
+
+        for t in targets:
             feed_url, callback = self.feeds[t]
             feed_info, entries = _fetch_feed(feed_url)
-            self.feed_handler(callback, feed_info, entries,
-                              max_entries=kwargs.get('max_entries'),
-                              ignore_fetched=kwargs.get('max_entries'))
+            self.feed_handler(callback, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
 
 
 # Command Line Interface ######################################################
@@ -155,28 +165,18 @@ def set_logger_level(verbose):
     logger.setLevel(logger_level[verbose])
 
 
-def wrangle_arg(kwargs):
-    kw = {}
-    for k, v in kwargs.items():
-        if k == 'targets' and len(v) != 0:
-            kw['targets'] = v
-        if k == 'max_entries' and v is not None:
-            kw[k] = v
-        if k == 'ignore_fetched' and v is not None:
-            kw[k] = v
-    return kw
-
-
 @click.command()
 @click.argument('src', type=click.File('r'), nargs=1)
 @click.argument('obj', nargs=1)
 @click.option('-v', '--verbose', type=click.IntRange(0, 3), count=True, help='Set log level')
-@click.option('-t', '--targets', type=str, multiple=True, help='The target function names.')
-@click.option('-m', '--max-entries', type=int, help="The maximum length for fetching entries every RSS feed")
-@click.option('--ignore-fetched/--no-ignore-fetched', help="The maximum length for fetching entries every RSS feed")
+@click.option('-t', '--targets', type=str, multiple=True, default=DEFAULT_RUN_PARAMS['targets'],
+              help='The target function names.')
+@click.option('-m', '--max-entries', type=int, default=DEFAULT_RUN_PARAMS['max_entries'],
+              help="The maximum length for fetching entries every RSS feed")
+@click.option('--ignore-fetched/--no-ignore-fetched', default=DEFAULT_RUN_PARAMS['ignore_fetched'],
+              help="The maximum length for fetching entries every RSS feed")
 def cmd(src, obj, verbose, **kwargs):
     """Run your feedy's project flexibly."""
     set_logger_level(verbose)
     runner = _get_runner(src, obj)
-    kw = wrangle_arg(kwargs)
-    runner.run(**kw)
+    runner.run(**kwargs)
