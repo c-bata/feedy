@@ -4,6 +4,10 @@ Feedy
 
 Simple RSS Feed Fetching Framework.
 
+* Decorator based feed fetcher.
+* Each function are given the RSS Feed's info, Feed Entry 's info and html body.
+* Simple plugin system and useful standard plugins.
+
 
 Tutorials
 =========
