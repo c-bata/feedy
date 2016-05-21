@@ -11,9 +11,10 @@ from urllib import parse, request
 from functools import wraps
 
 from bs4 import BeautifulSoup
+from concurrent import futures
 
 
-def _get_facebook_share_count(url):
+def _get_facebook_info(url):
     base_url = 'http://api.facebook.com/method/fql.query?'
     params = [
         ('query', "select total_count,like_count from link_stat where url='{url}'".format(url=url)),
@@ -27,7 +28,7 @@ def _get_facebook_share_count(url):
     }
 
 
-def _get_pocket_saved_count(url):
+def _get_pocket_info(url):
     base_url = 'http://widgets.getpocket.com/v1/button?'
     params = [
         ('v', '1'),
@@ -43,7 +44,7 @@ def _get_pocket_saved_count(url):
     }
 
 
-def _get_hatebu_count(url):
+def _get_hatena_info(url):
     base_url = 'http://b.hatena.ne.jp/entry/json/?'
     params = [
         ('url', url),
@@ -66,9 +67,15 @@ def social_share_plugin(callback):
     def wrapper(*args, **kwargs):
         social_count = {}
         url = kwargs['entry_info']['link']
-        social_count.update(_get_facebook_share_count(url))
-        social_count.update(_get_pocket_saved_count(url))
-        social_count.update(_get_hatebu_count(url))
+        with futures.ProcessPoolExecutor() as executer:
+            mappings = {
+                executer.submit(_get_facebook_info, url): url,
+                executer.submit(_get_pocket_info, url): url,
+                executer.submit(_get_hatena_info, url): url,
+            }
+            for future in futures.as_completed(mappings):
+                result = future.result()
+                social_count.update(result)
         kwargs['social_count'] = social_count
         callback(*args, **kwargs)
     return wrapper
