@@ -26,7 +26,7 @@ setup(
     entry_points={
         'console_scripts': ['feedy = feedy:cmd']
     },
-    install_requires=['feedparser', 'beautifulsoup4', 'click', 'requests'],
+    install_requires=['feedparser', 'beautifulsoup4', 'click', 'requests', 'aiohttp', 'cchardet'],
     include_package_data=True,
     test_suite="tests",
 )

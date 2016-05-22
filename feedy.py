@@ -1,3 +1,4 @@
+import asyncio
 import os
 import types
 import shelve
@@ -8,6 +9,7 @@ from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, E
 from functools import wraps
 import shutil
 
+import aiohttp
 import click
 import feedparser
 import requests
@@ -64,17 +66,20 @@ def download_image(domain, img_tag, filename, directory=None):
 
 
 # Fetch feed, entry      ########################################
-def _fetch_feed(feed_url):
-    parsed = feedparser.parse(feed_url)
-    feed = parsed.feed
-    feed_info = {
-        'title': feed.title,
-        'subtitle': feed.subtitle,
-        'site_url': feed.link,
-        'fetched_at': datetime.now()
-    }
-    entries = parsed.entries
-    return feed_info, entries
+async def _fetch_feed(feed_url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(feed_url) as response:
+            body = await response.text()
+            parsed = feedparser.parse(body)
+            feed = parsed.feed
+            feed_info = {
+                'title': feed.title,
+                'subtitle': feed.subtitle,
+                'site_url': feed.link,
+                'fetched_at': datetime.now()
+            }
+            entries = parsed.entries
+            return feed_info, entries
 
 
 def _get_entry_info(entry):
@@ -158,17 +163,22 @@ class Feedy:
             else:
                 logger.error("A ignore_fetched is True, but store is not set.")
 
-    def run(self, targets=DEFAULT_RUN_PARAMS['targets'],
-            max_entries=DEFAULT_RUN_PARAMS['max_entries'],
-            ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
+    def target_handler(self, target, loop,
+                       max_entries=DEFAULT_RUN_PARAMS['max_entries'],
+                       ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
+        feed_url, callback = self.feeds[target]
+        fetched_feed = loop.run_until_complete(_fetch_feed(feed_url))
+        feed_info, entries = fetched_feed
+        self.feed_handler(callback, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
 
+    def run(self, targets=DEFAULT_RUN_PARAMS['targets'], **kwargs):
         if not targets:
             targets = self.feeds.keys()
 
+        loop = asyncio.get_event_loop()
         for t in targets:
-            feed_url, callback = self.feeds[t]
-            feed_info, entries = _fetch_feed(feed_url)
-            self.feed_handler(callback, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
+            self.target_handler(t, loop, **kwargs)
+        loop.close()
 
 
 # Command Line Interface ######################################################
