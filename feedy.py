@@ -10,7 +10,7 @@ from functools import wraps
 import aiohttp
 import click
 import feedparser
-import requests
+from bs4 import BeautifulSoup
 
 # Default run parameters #######################################
 DEFAULT_RUN_PARAMS = {
@@ -52,15 +52,37 @@ def get_image_abs_path(domain, img_src):
     return abs_path
 
 
-def download_image(domain, img_tag, filename, directory=None):
-    image_abs_path = get_image_abs_path(domain, img_tag['src'])
-    r = requests.get(image_abs_path, stream=True)
-    if r.status_code == 200:
-        ext = img_tag['src'].split('.')[-1]
-        filepath = os.path.join(directory, filename) if directory else filename
-        with open('{filepath}.{ext}'.format(filepath=filepath, ext=ext), 'wb') as f:
-            r.raw_decode_content = True
-            shutil.copyfileobj(r.raw, f)
+async def _download_and_write_image(image_url, filepath):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(image_url) as response:
+            body = await response.read()
+            with open(filepath, 'wb') as f:
+                f.write(body)
+
+
+async def _download_images(args):
+    tasks = [asyncio.ensure_future(_download_and_write_image(a["url"], a["file"])) for a in args]
+    results = await asyncio.gather(*tasks)
+    return results
+
+
+def download_image(body, domain, filename=None, directory=None, soup_find_param=None, tag_name='img'):
+    if soup_find_param is None:
+        soup_find_param = {}
+    soup = BeautifulSoup(body, "html.parser")
+    args = []
+    for i, img_soup in enumerate(soup.find_all(tag_name, soup_find_param)):
+        image_url = get_image_abs_path(domain, img_soup['src'])
+        fn = filename.format(i=i) + "." + img_soup['src'].split('.')[-1]
+        file_path = os.path.join(directory, fn) if directory else fn
+        args.append({
+            "url": image_url,
+            "file": file_path,
+        })
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(_download_images(args))
+    loop.close()
 
 
 # Fetch feed, entry      ########################################
