@@ -4,10 +4,8 @@ import types
 import shelve
 from datetime import datetime
 from time import mktime
-from urllib import request
 from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, ERROR
 from functools import wraps
-import shutil
 
 import aiohttp
 import click
@@ -101,10 +99,7 @@ async def _get_entry_body(entry):
 
 
 async def _get_entry_bodies(entries):
-    tasks = []
-    for entry in entries:
-        task = asyncio.ensure_future(_get_entry_body(entry))
-        tasks.append(task)
+    tasks = [asyncio.ensure_future(_get_entry_body(e)) for e in entries]
     bodies = asyncio.gather(*tasks)
     return await bodies
 
