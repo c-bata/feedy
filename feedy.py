@@ -93,10 +93,20 @@ def _get_entry_info(entry):
     }
 
 
-def _get_entry_body(entry):
-    with request.urlopen(entry.link) as response:
-        body = response.read().decode('utf-8')
-    return body
+async def _get_entry_body(entry):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(entry.link) as response:
+            body = await response.text()
+            return body
+
+
+async def _get_entry_bodies(entries):
+    tasks = []
+    for entry in entries:
+        task = asyncio.ensure_future(_get_entry_body(entry))
+        tasks.append(task)
+    bodies = asyncio.gather(*tasks)
+    return await bodies
 
 
 class Feedy:
@@ -132,15 +142,14 @@ class Feedy:
     def add_feed(self, feed_url, callback):
         self.feeds[callback.__name__] = (feed_url, callback)
 
-    def entry_handler(self, callback, entry, feed_info):
+    def entry_handler(self, callback, body, entry, feed_info):
         for plugin in self.plugins:
             callback = plugin(callback) if callable(plugin) else callback
 
         entry_info = _get_entry_info(entry)
-        body = _get_entry_body(entry)
         callback(feed_info=feed_info, entry_info=entry_info, body=body)
 
-    def feed_handler(self, callback, feed_info, entries,
+    def feed_handler(self, callback, loop, feed_info, entries,
                      max_entries=DEFAULT_RUN_PARAMS['max_entries'],
                      ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
         if ignore_fetched:
@@ -151,10 +160,13 @@ class Feedy:
         if max_entries:
             entries = entries[:max_entries]
 
-        for entry in entries:
+        future = asyncio.ensure_future(_get_entry_bodies(entries))
+        bodies = loop.run_until_complete(future)
+
+        for i, entry in enumerate(entries):
             if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
                 continue
-            self.entry_handler(callback, entry, feed_info)
+            self.entry_handler(callback, bodies[i], entry, feed_info)
 
         if ignore_fetched:
             if self.store:
@@ -169,7 +181,7 @@ class Feedy:
         feed_url, callback = self.feeds[target]
         fetched_feed = loop.run_until_complete(_fetch_feed(feed_url))
         feed_info, entries = fetched_feed
-        self.feed_handler(callback, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
+        self.feed_handler(callback, loop, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
 
     def run(self, targets=DEFAULT_RUN_PARAMS['targets'], **kwargs):
         if not targets:
