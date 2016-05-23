@@ -135,13 +135,12 @@ class Feedy:
         bodies = loop.run_until_complete(future)
 
         for i, entry in enumerate(entries):
-            if ignore_fetched or not last_fetched_at:
-                continue
-            if last_fetched_at > datetime.fromtimestamp(mktime(entry.updated_parsed)):
+            if (not ignore_fetched and last_fetched_at and
+                    last_fetched_at > datetime.fromtimestamp(mktime(entry.updated_parsed))):
                 continue
             self.entry_handler(callback, bodies[i], entry, feed_info)
 
-        if ignore_fetched and self.store:
+        if not ignore_fetched and self.store:
             self.store.update_or_create('{}_fetched_at'.format(callback.__name__), datetime.now())
         else:
             logger.debug("A last_fetched_at doesn't update in Store.")
@@ -168,7 +167,9 @@ class Feedy:
 def _get_runner(src, obj):
     t = types.ModuleType('runner')
     with src as mod:
-        exec(compile(mod.read(), src.name, 'exec'), t.__dict__)
+        t.__dict__['__file__'] = src.name
+        compiled = compile(mod.read(), src.name, 'exec')
+        exec(compiled, t.__dict__)
     runner = getattr(t, obj)
     return runner
 
