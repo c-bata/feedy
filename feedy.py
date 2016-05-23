@@ -1,16 +1,16 @@
+import asyncio
 import os
 import types
 import shelve
 from datetime import datetime
 from time import mktime
-from urllib import request
 from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, ERROR
 from functools import wraps
-import shutil
 
+import aiohttp
 import click
 import feedparser
-import requests
+from bs4 import BeautifulSoup
 
 # Default run parameters #######################################
 DEFAULT_RUN_PARAMS = {
@@ -52,29 +52,54 @@ def get_image_abs_path(domain, img_src):
     return abs_path
 
 
-def download_image(domain, img_tag, filename, directory=None):
-    image_abs_path = get_image_abs_path(domain, img_tag['src'])
-    r = requests.get(image_abs_path, stream=True)
-    if r.status_code == 200:
-        ext = img_tag['src'].split('.')[-1]
-        filepath = os.path.join(directory, filename) if directory else filename
-        with open('{filepath}.{ext}'.format(filepath=filepath, ext=ext), 'wb') as f:
-            r.raw_decode_content = True
-            shutil.copyfileobj(r.raw, f)
+async def _download_and_write_image(image_url, filepath):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(image_url) as response:
+            body = await response.read()
+            with open(filepath, 'wb') as f:
+                f.write(body)
+
+
+async def _download_images(args):
+    tasks = [asyncio.ensure_future(_download_and_write_image(a["url"], a["file"])) for a in args]
+    results = await asyncio.gather(*tasks)
+    return results
+
+
+def download_image(body, domain, filename=None, directory=None, soup_find_param=None, tag_name='img'):
+    if soup_find_param is None:
+        soup_find_param = {}
+    soup = BeautifulSoup(body, "html.parser")
+    args = []
+    for i, img_soup in enumerate(soup.find_all(tag_name, soup_find_param)):
+        image_url = get_image_abs_path(domain, img_soup['src'])
+        fn = filename.format(i=i) + "." + img_soup['src'].split('.')[-1]
+        file_path = os.path.join(directory, fn) if directory else fn
+        args.append({
+            "url": image_url,
+            "file": file_path,
+        })
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(_download_images(args))
+    loop.close()
 
 
 # Fetch feed, entry      ########################################
-def _fetch_feed(feed_url):
-    parsed = feedparser.parse(feed_url)
-    feed = parsed.feed
-    feed_info = {
-        'title': feed.title,
-        'subtitle': feed.subtitle,
-        'site_url': feed.link,
-        'fetched_at': datetime.now()
-    }
-    entries = parsed.entries
-    return feed_info, entries
+async def _fetch_feed(feed_url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(feed_url) as response:
+            body = await response.text()
+            parsed = feedparser.parse(body)
+            feed = parsed.feed
+            feed_info = {
+                'title': feed.title,
+                'subtitle': feed.subtitle,
+                'site_url': feed.link,
+                'fetched_at': datetime.now()
+            }
+            entries = parsed.entries
+            return feed_info, entries
 
 
 def _get_entry_info(entry):
@@ -88,10 +113,17 @@ def _get_entry_info(entry):
     }
 
 
-def _get_entry_body(entry):
-    with request.urlopen(entry.link) as response:
-        body = response.read().decode('utf-8')
-    return body
+async def _get_entry_body(entry):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(entry.link) as response:
+            body = await response.text()
+            return body
+
+
+async def _get_entry_bodies(entries):
+    tasks = [asyncio.ensure_future(_get_entry_body(e)) for e in entries]
+    bodies = asyncio.gather(*tasks)
+    return await bodies
 
 
 class Feedy:
@@ -127,15 +159,14 @@ class Feedy:
     def add_feed(self, feed_url, callback):
         self.feeds[callback.__name__] = (feed_url, callback)
 
-    def entry_handler(self, callback, entry, feed_info):
+    def entry_handler(self, callback, body, entry, feed_info):
         for plugin in self.plugins:
             callback = plugin(callback) if callable(plugin) else callback
 
         entry_info = _get_entry_info(entry)
-        body = _get_entry_body(entry)
         callback(feed_info=feed_info, entry_info=entry_info, body=body)
 
-    def feed_handler(self, callback, feed_info, entries,
+    def feed_handler(self, callback, loop, feed_info, entries,
                      max_entries=DEFAULT_RUN_PARAMS['max_entries'],
                      ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
         if ignore_fetched:
@@ -146,10 +177,13 @@ class Feedy:
         if max_entries:
             entries = entries[:max_entries]
 
-        for entry in entries:
+        future = asyncio.ensure_future(_get_entry_bodies(entries))
+        bodies = loop.run_until_complete(future)
+
+        for i, entry in enumerate(entries):
             if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
                 continue
-            self.entry_handler(callback, entry, feed_info)
+            self.entry_handler(callback, bodies[i], entry, feed_info)
 
         if ignore_fetched:
             if self.store:
@@ -158,17 +192,22 @@ class Feedy:
             else:
                 logger.error("A ignore_fetched is True, but store is not set.")
 
-    def run(self, targets=DEFAULT_RUN_PARAMS['targets'],
-            max_entries=DEFAULT_RUN_PARAMS['max_entries'],
-            ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
+    def target_handler(self, target, loop,
+                       max_entries=DEFAULT_RUN_PARAMS['max_entries'],
+                       ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
+        feed_url, callback = self.feeds[target]
+        fetched_feed = loop.run_until_complete(_fetch_feed(feed_url))
+        feed_info, entries = fetched_feed
+        self.feed_handler(callback, loop, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
 
+    def run(self, targets=DEFAULT_RUN_PARAMS['targets'], **kwargs):
         if not targets:
             targets = self.feeds.keys()
 
+        loop = asyncio.get_event_loop()
         for t in targets:
-            feed_url, callback = self.feeds[t]
-            feed_info, entries = _fetch_feed(feed_url)
-            self.feed_handler(callback, feed_info, entries, max_entries=max_entries, ignore_fetched=ignore_fetched)
+            self.target_handler(t, loop, **kwargs)
+        loop.close()
 
 
 # Command Line Interface ######################################################
