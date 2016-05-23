@@ -21,12 +21,12 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-    packages=['feedy_plugins'],
+    packages=['feedy_plugins', 'feedy_utils'],
     py_modules=['feedy'],
     entry_points={
         'console_scripts': ['feedy = feedy:cmd']
     },
-    install_requires=['feedparser', 'beautifulsoup4', 'click', 'aiohttp', 'cchardet'],
+    install_requires=['feedparser', 'beautifulsoup4', 'click', 'aiohttp'],
     include_package_data=True,
     test_suite="tests",
 )

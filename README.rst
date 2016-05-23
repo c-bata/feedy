@@ -240,6 +240,30 @@ And running:
         app.run()
 
 
+5. Using feedy_utils
+--------------------
+
+Download images using feedy_utils.
+
+.. code-block:: python
+
+    from feedy import Feedy
+    from feedy_utils import download_image
+
+    IMG_DIR = os.path.join(os.path.dirname('.'), 'img')
+
+    app = Feedy(store='feedy.dat', ignore_fetched=True)
+
+    @app.add('http://rss.cnn.com/rss/edition.rss')
+    def cnn(feed_info, entry_info, body):
+        download_image(body, feed_info['site_url'],
+                       filename="{title}-{i}".format(entry_info['title']),
+                       directory=IMG_DIR)
+
+    if __name__ == '__main__':
+        app.run()
+
+
 Create Plugins
 ==============
 
