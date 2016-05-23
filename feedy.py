@@ -15,6 +15,7 @@ DEFAULT_RUN_PARAMS = {
     'targets': None,
     'max_entries': None,
     'ignore_fetched': True,
+    'asyncio_semaphore': 5,
 }
 
 
@@ -72,14 +73,20 @@ def _get_entry_info(entry):
     }
 
 
-async def _get_entry_body(entry):
+async def _fetch_body(url):
     async with aiohttp.ClientSession() as session:
-        async with session.get(entry.link) as response:
+        async with session.get(url) as response:
             return await response.text()
 
 
-async def _get_entry_bodies(entries):
-    tasks = [asyncio.ensure_future(_get_entry_body(e)) for e in entries]
+async def _bound_fetch_body(url, semaphore=DEFAULT_RUN_PARAMS['asyncio_semaphore']):
+    sem = asyncio.Semaphore(semaphore)
+    async with sem:
+        return await _fetch_body(url)
+
+
+async def _fetch_bodies(entries):
+    tasks = [asyncio.ensure_future(_bound_fetch_body(e.link)) for e in entries]
     bodies = asyncio.gather(*tasks)
     return await bodies
 
@@ -135,7 +142,7 @@ class Feedy:
                      ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
         last_fetched_at = self.store.load('{}_fetched_at'.format(callback.__name__)) if self.store else None
         entries = [e for e in entries[:max_entries] if _should_fetch(e.updated_parsed, ignore_fetched, last_fetched_at)]
-        future = asyncio.ensure_future(_get_entry_bodies(entries))
+        future = asyncio.ensure_future(_fetch_bodies(entries))
         bodies = loop.run_until_complete(future)
 
         if not entries:
