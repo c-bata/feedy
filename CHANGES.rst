@@ -1,6 +1,14 @@
 CHANGES
 =======
 
+0.0.3 (2016-05-23)
+------------------
+
+- Async fetch images, response bodies and RSS feeds.
+- Creating feedy_utils and adding image downloader.
+- Update runner parameters.
+
+
 0.0.2 (2016-05-20)
 ------------------
 

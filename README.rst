@@ -9,11 +9,8 @@ Simple RSS Feed Fetching Framework.
 * Simple plugin system and useful standard plugins.
 
 
-Tutorials
-=========
-
-0. Installation
----------------
+Installation
+============
 
 Supported python version is Python3.
 
@@ -21,6 +18,9 @@ Supported python version is Python3.
 
     pip install feedy
 
+
+Tutorials
+=========
 
 1. Getting feed entry's title and link URL
 ------------------------------------------
