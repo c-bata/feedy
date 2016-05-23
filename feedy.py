@@ -14,7 +14,7 @@ import feedparser
 DEFAULT_RUN_PARAMS = {
     'targets': None,
     'max_entries': None,
-    'ignore_fetched': False,
+    'ignore_fetched': True,
 }
 
 
@@ -75,14 +75,21 @@ def _get_entry_info(entry):
 async def _get_entry_body(entry):
     async with aiohttp.ClientSession() as session:
         async with session.get(entry.link) as response:
-            body = await response.text()
-            return body
+            return await response.text()
 
 
 async def _get_entry_bodies(entries):
     tasks = [asyncio.ensure_future(_get_entry_body(e)) for e in entries]
     bodies = asyncio.gather(*tasks)
     return await bodies
+
+
+def _should_fetch(entry_updated_parsed, ignore_fetched, last_fetched_at):
+    if ignore_fetched or last_fetched_at is None:
+        return True
+    if datetime.fromtimestamp(mktime(entry_updated_parsed)) > last_fetched_at:
+        return True
+    return False
 
 
 class Feedy:
@@ -125,24 +132,21 @@ class Feedy:
     def feed_handler(self, callback, loop, feed_info, entries,
                      max_entries=DEFAULT_RUN_PARAMS['max_entries'],
                      ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
-        new_feed_entries = []
         last_fetched_at = self.store.load('{}_fetched_at'.format(callback.__name__)) if self.store else None
-        for entry in entries[:max_entries]:
-            if (not ignore_fetched and last_fetched_at and
-                    last_fetched_at > datetime.fromtimestamp(mktime(entry.updated_parsed))):
-                continue
-            new_feed_entries.append(entry)
-
-        future = asyncio.ensure_future(_get_entry_bodies(new_feed_entries))
+        entries = [e for e in entries[:max_entries] if _should_fetch(e.updated_parsed, ignore_fetched, last_fetched_at)]
+        future = asyncio.ensure_future(_get_entry_bodies(entries))
         bodies = loop.run_until_complete(future)
 
-        for i, entry in enumerate(new_feed_entries):
-            self.entry_handler(callback, bodies[i], entry, feed_info)
-
-        if not ignore_fetched and self.store:
+        if not entries:
+            logger.info("No updates in {}.".format(callback.__name__))
+        if self.store:
             self.store.update_or_create('{}_fetched_at'.format(callback.__name__), datetime.now())
+            logger.debug("A last_fetched_at is just updated.")
         else:
-            logger.debug("A last_fetched_at doesn't update in Store.")
+            logger.debug("A last_fetched_at isn't updated.")
+
+        for i, entry in enumerate(entries):
+            self.entry_handler(callback, bodies[i], entry, feed_info)
 
     def target_handler(self, target, loop,
                        max_entries=DEFAULT_RUN_PARAMS['max_entries'],

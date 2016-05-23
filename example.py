@@ -2,7 +2,7 @@ from feedy import Feedy
 from feedy_plugins import social_share_plugin
 from bs4 import BeautifulSoup
 
-feedy = Feedy()
+feedy = Feedy('feedy.dat')
 
 
 @feedy.add('http://rss.cnn.com/rss/edition.rss')
