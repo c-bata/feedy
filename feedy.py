@@ -111,12 +111,9 @@ class Feedy:
     def add(self, feed_url, callback=None):
         @wraps(callback)
         def decorator(callback_func):
-            self.add_feed(feed_url, callback_func)
+            self.feeds[callback_func.__name__] = (feed_url, callback_func)
             return callback_func
         return decorator(callback) if callback else decorator
-
-    def add_feed(self, feed_url, callback):
-        self.feeds[callback.__name__] = (feed_url, callback)
 
     def entry_handler(self, callback, body, entry, feed_info):
         for plugin in self.plugins:
@@ -128,16 +125,18 @@ class Feedy:
     def feed_handler(self, callback, loop, feed_info, entries,
                      max_entries=DEFAULT_RUN_PARAMS['max_entries'],
                      ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
-        entries = entries[:max_entries] if max_entries else entries
+        new_feed_entries = []
         last_fetched_at = self.store.load('{}_fetched_at'.format(callback.__name__)) if self.store else None
-
-        future = asyncio.ensure_future(_get_entry_bodies(entries))
-        bodies = loop.run_until_complete(future)
-
-        for i, entry in enumerate(entries):
+        for entry in entries[:max_entries]:
             if (not ignore_fetched and last_fetched_at and
                     last_fetched_at > datetime.fromtimestamp(mktime(entry.updated_parsed))):
                 continue
+            new_feed_entries.append(entry)
+
+        future = asyncio.ensure_future(_get_entry_bodies(new_feed_entries))
+        bodies = loop.run_until_complete(future)
+
+        for i, entry in enumerate(new_feed_entries):
             self.entry_handler(callback, bodies[i], entry, feed_info)
 
         if not ignore_fetched and self.store:
