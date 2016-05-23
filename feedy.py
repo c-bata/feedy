@@ -95,7 +95,6 @@ class Feedy:
             self.set_store(store)
 
     def set_store(self, store):
-        """ Set store """
         if hasattr(store, 'update_or_create') or hasattr(store, 'load'):
             self.store = store
         elif isinstance(store, str):
@@ -107,6 +106,7 @@ class Feedy:
         if hasattr(plugin, 'setup'):
             plugin.setup(self)
         self.plugins.append(plugin)
+        logger.debug("{} plugin is registered.".format(plugin.__name__))
 
     def add(self, feed_url, callback=None):
         @wraps(callback)
@@ -128,28 +128,23 @@ class Feedy:
     def feed_handler(self, callback, loop, feed_info, entries,
                      max_entries=DEFAULT_RUN_PARAMS['max_entries'],
                      ignore_fetched=DEFAULT_RUN_PARAMS['ignore_fetched']):
-        if ignore_fetched:
-            if self.store:
-                last_fetched = self.store.load('{feed_name}_fetched_at'.format(feed_name=callback.__name__))
-            else:
-                logger.error("A ignore_fetched is True, but store is not set.")
-        if max_entries:
-            entries = entries[:max_entries]
+        entries = entries[:max_entries] if max_entries else entries
+        last_fetched_at = self.store.load('{}_fetched_at'.format(callback.__name__)) if self.store else None
 
         future = asyncio.ensure_future(_get_entry_bodies(entries))
         bodies = loop.run_until_complete(future)
 
         for i, entry in enumerate(entries):
-            if self.store and last_fetched and last_fetched > datetime.fromtimestamp(mktime(entry.updated_parsed)):
+            if ignore_fetched or not last_fetched_at:
+                continue
+            if last_fetched_at > datetime.fromtimestamp(mktime(entry.updated_parsed)):
                 continue
             self.entry_handler(callback, bodies[i], entry, feed_info)
 
-        if ignore_fetched:
-            if self.store:
-                self.store.update_or_create('{feed_name}_fetched_at'.format(feed_name=callback.__name__),
-                                            datetime.now())
-            else:
-                logger.error("A ignore_fetched is True, but store is not set.")
+        if ignore_fetched and self.store:
+            self.store.update_or_create('{}_fetched_at'.format(callback.__name__), datetime.now())
+        else:
+            logger.debug("A last_fetched_at doesn't update in Store.")
 
     def target_handler(self, target, loop,
                        max_entries=DEFAULT_RUN_PARAMS['max_entries'],
