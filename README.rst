@@ -34,8 +34,8 @@ Creating ``main.py`` like:
     app = Feedy()
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-    def djangopackages(feed_info, entry_info, body):
-        print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
+    def djangopackages(info, body):
+        print("- [{pkgname}]({link})".format(pkgname=info['article_title'], link=info['article_url']))
 
     if __name__ == '__main__':
         app.run()
@@ -62,9 +62,10 @@ And running:
     app = Feedy(store='feedy.dat', ignore_fetched=True)
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-    def djangopackages(feed_info, entry_info, body):
+    def djangopackages(info, body):
         """Get the latest django library information."""
-        print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
+        print("- [{pkgname}]({link})".format(pkgname=info['article_title'],
+                                             link=info['article_link']))
 
     if __name__ == '__main__':
         app.run()
@@ -99,15 +100,16 @@ Add CNN news feed for collecting images on each articles.
     app = Feedy(store='feedy.dat', ignore_fetched=True)
 
     @app.add('http://rss.cnn.com/rss/edition.rss')
-    def cnn(feed_info, entry_info, body):
+    def cnn(info, body):
         soup = BeautifulSoup(body, "html.parser")
         for x in soup.find_all('img'):
             print(x['src'])
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-    def djangopackages(feed_info, entry_info, body):
+    def djangopackages(info, body):
         """Get the latest django library information."""
-        print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
+        print("- [{pkgname}]({link})".format(pkgname=info['article_title'],
+                                             link=info['article_link']))
 
     if __name__ == '__main__':
         app.run()
@@ -193,9 +195,9 @@ There are two ways for applying the plugin.
 
     @app.add('http://rss.cnn.com/rss/edition.rss')
     @social_share_plugin
-    def cnn_shared(feed_info, entry_info, body, social_count):
+    def cnn_shared(info, body, social_count):
         article = {
-            'title': entry_info['title'],
+            'title': info['article_title'],
             'pocket': social_count['pocket_count'],
             'facebook': social_count['facebook_count'],
         }
@@ -223,17 +225,18 @@ And running:
     app.install(social_shared_plugin)  # apply each patterns.
 
     @app.add('http://rss.cnn.com/rss/edition.rss')
-    def cnn_shared(feed_info, entry_info, body, social_count):
+    def cnn_shared(info, body, social_count):
         article = {
-            'title': entry_info['title'],
+            'title': info['article_title'],
             'pocket': social_count['pocket_count'],
             'facebook': social_count['facebook_count'],
         }
         print(article)
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-    def djangopackages(feed_info, entry_info, body, social_count):
-        print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
+    def djangopackages(info, body, social_count):
+        print("- [{pkgname}]({link})".format(pkgname=info['article_title'],
+                                             link=info['article_link']))
         print(social_count['pocket_count'])
 
     if __name__ == '__main__':
@@ -255,9 +258,9 @@ Download images using feedy_utils.
     app = Feedy(store='feedy.dat', ignore_fetched=True)
 
     @app.add('http://rss.cnn.com/rss/edition.rss')
-    def cnn(feed_info, entry_info, body):
-        download_image(body, feed_info['site_url'],
-                       filename="{title}-{i}".format(entry_info['title']),
+    def cnn(info, body):
+        download_image(body, info['site_url'],
+                       filename="{title}-{i}".format(info['article_title']),
                        directory=IMG_DIR)
 
     if __name__ == '__main__':

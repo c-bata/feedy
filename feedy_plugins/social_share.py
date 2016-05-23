@@ -76,7 +76,7 @@ async def _get_social_info(url):
 def social_share_plugin(callback):
     @wraps(callback)
     def wrapper(*args, **kwargs):
-        url = kwargs['entry_info']['link']
+        url = kwargs['info']['article_url']
         loop = asyncio.get_event_loop()
         results = loop.run_until_complete(_get_social_info(url))
         logger.debug(results)

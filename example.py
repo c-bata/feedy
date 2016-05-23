@@ -6,7 +6,7 @@ feedy = Feedy('feedy.dat')
 
 
 @feedy.add('http://rss.cnn.com/rss/edition.rss')
-def cnn(feed_info, entry_info, body):
+def cnn(info, body):
     soup = BeautifulSoup(body, "html.parser")
     for x in soup.find_all('img'):
         print(x['src'])
@@ -14,10 +14,10 @@ def cnn(feed_info, entry_info, body):
 
 @feedy.add('http://rss.cnn.com/rss/edition.rss')
 @social_share_plugin
-def cnn_shared(feed_info, entry_info, body, social_count):
+def cnn_shared(info, body, social_count):
     article = {
-        'url': entry_info['link'],
-        'title': entry_info['title'],
+        'url': info['article_url'],
+        'title': info['article_title'],
         'pocket': social_count['pocket_count'],
         'facebook': social_count['facebook_count'],
     }
@@ -25,8 +25,8 @@ def cnn_shared(feed_info, entry_info, body, social_count):
 
 
 @feedy.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-def djangopackages(feed_info, entry_info, body):
-    print("- [{pkgname}]({link})".format(pkgname=entry_info['title'], link=entry_info['link']))
+def djangopackages(info, body):
+    print("- [{pkgname}]({link})".format(pkgname=info['article_title'], link=info['article_url']))
 
 if __name__ == '__main__':
     feedy.run()

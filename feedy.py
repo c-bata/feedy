@@ -52,8 +52,8 @@ async def _fetch_feed(feed_url):
             parsed = feedparser.parse(body)
             feed = parsed.feed
             feed_info = {
-                'title': feed.title,
-                'subtitle': feed.subtitle,
+                'site_title': feed.title,
+                'site_subtitle': feed.subtitle,
                 'site_url': feed.link,
                 'fetched_at': datetime.now()
             }
@@ -65,8 +65,8 @@ def _get_entry_info(entry):
     published = datetime.fromtimestamp(mktime(entry.published_parsed)) if hasattr(entry, 'published_parsed') else None
     updated = datetime.fromtimestamp(mktime(entry.updated_parsed)) if hasattr(entry, 'updated_parsed') else None
     return {
-        'title': entry.title,
-        'link': entry.link,
+        'article_title': entry.title,
+        'article_url': entry.link,
         'published_at': published,
         'updated_at': updated,
     }
@@ -127,7 +127,8 @@ class Feedy:
             callback = plugin(callback) if callable(plugin) else callback
 
         entry_info = _get_entry_info(entry)
-        callback(feed_info=feed_info, entry_info=entry_info, body=body)
+        feed_info.update(entry_info)  # This dict need not copy using `copy.deepcopy()`.
+        callback(info=feed_info, body=body)
 
     def feed_handler(self, callback, loop, feed_info, entries,
                      max_entries=DEFAULT_RUN_PARAMS['max_entries'],
