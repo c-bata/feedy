@@ -26,7 +26,11 @@ setup(
     entry_points={
         'console_scripts': ['feedy = feedy:cmd']
     },
-    install_requires=['feedparser', 'beautifulsoup4', 'click', 'aiohttp'],
+    install_requires=['feedparser', 'click', 'aiohttp'],
+    extra_require={
+        "wordcount": ['janome', 'beautifulsoup4'],
+        "image": ['beautifulsoup4'],
+    },
     include_package_data=True,
     test_suite="tests",
 )
