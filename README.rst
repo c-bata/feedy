@@ -12,7 +12,7 @@ Simple RSS Feed Fetching Framework.
 Installation
 ============
 
-Supported python version is Python3.
+Supported python version is Python3.4 later.
 
 ::
 
@@ -31,7 +31,7 @@ Creating ``main.py`` like:
 
     from feedy import Feedy
 
-    app = Feedy()
+    app = Feedy('feedy.dat')
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
     def djangopackages(info, body):
@@ -51,43 +51,26 @@ And running:
     - [django-db-sanitizer](http://www.djangopackages.com/packages/p/django-db-sanitizer/)
     :
 
-
-2. Getting only newest feed entries
------------------------------------
-
-.. code-block:: python
-
-    from feedy import Feedy
-
-    app = Feedy(store='feedy.dat', ignore_fetched=True)
-
-    @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-    def djangopackages(info, body):
-        """Get the latest django library information."""
-        print("- [{pkgname}]({link})".format(pkgname=info['article_title'],
-                                             link=info['article_link']))
-
-    if __name__ == '__main__':
-        app.run()
-
-
-And running:
+After that please execute again.
 
 ::
 
     $ python main.py
-    - [django-dynamic-views](http://www.djangopackages.com/packages/p/django-dynamic-views/)
-    - [django-simple-address](http://www.djangopackages.com/packages/p/django-simple-address/)
-    - [django-db-sanitizer](http://www.djangopackages.com/packages/p/django-db-sanitizer/)
-    :
-    :
-    $ python main.py  # This is no output because There are no newest feed.
-    $
+    # No output
 
 It displays only newest feed entries.
 
+If you want to check more detail messages:
 
-3. Add feed patterns
+::
+
+    $ feedy example.py feedy -t djangopackages --no-ignore-fetched -vvv
+    [INFO] No updates in djangopackages.
+    [DEBUG] A last_fetched_at is just updated.
+
+
+
+2. Add feed patterns
 --------------------
 
 Add CNN news feed for collecting images on each articles.
@@ -131,7 +114,7 @@ And running:
     :
 
 
-4. Command line interface
+3. Command line interface
 -------------------------
 
 Feedy offers command line interface. It's useful for debugging
