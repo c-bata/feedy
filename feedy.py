@@ -14,7 +14,7 @@ import feedparser
 DEFAULT_RUN_PARAMS = {
     'targets': None,
     'max_entries': None,
-    'ignore_fetched': True,
+    'ignore_fetched': False,
     'asyncio_semaphore': 5,
 }
 
