@@ -1,6 +1,14 @@
 CHANGES
 =======
 
+0.0.4 (2016-05-25)
+------------------
+
+- Fix several bugs
+- Implement word-counter
+- Set semaphore
+- Alter run parameters
+
 0.0.3 (2016-05-23)
 ------------------
 

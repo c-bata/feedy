@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='feedy',
-    version='0.0.3',
+    version='0.0.4',
     author='Masashi Shibata <contact@c-bata.link>',
     author_email='contact@c-bata.link',
     url='https://github.com/c-bata/feedy',
