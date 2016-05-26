@@ -7,7 +7,7 @@ setup(
     author='Masashi Shibata <contact@c-bata.link>',
     author_email='contact@c-bata.link',
     url='https://github.com/c-bata/feedy',
-    description='Simple RSS feed fetching framework',
+    description='Simple RSS Feed fetching framework',
     license='MIT License',
     keywords='rss feed',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
@@ -27,10 +27,11 @@ setup(
         'console_scripts': ['feedy = feedy:cmd']
     },
     install_requires=['feedparser', 'click', 'aiohttp'],
-    extra_require={
+    extra_requires={
         "wordcount": ['janome', 'beautifulsoup4'],
         "image": ['beautifulsoup4'],
     },
     include_package_data=True,
     test_suite="tests",
 )
+
