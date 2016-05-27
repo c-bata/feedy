@@ -35,7 +35,7 @@ Creating ``main.py`` like:
 
     @app.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
     def djangopackages(info, body):
-        print("- [{pkgname}]({link})".format(pkgname=info['article_title'], link=info['article_url']))
+        print("- [%s](%s)" % info['article_title'], info['article_url'])
 
     if __name__ == '__main__':
         app.run()
@@ -60,20 +60,12 @@ After that please execute again.
 
 It displays only newest feed entries.
 
-If you want to check more detail messages:
-
-::
-
-    $ feedy example.py feedy -t djangopackages --no-ignore-fetched -vvv
-    [INFO] No updates in djangopackages.
-    [DEBUG] A last_fetched_at is just updated.
-
 
 
 2. Add feed patterns
 --------------------
 
-Add CNN news feed for collecting images on each articles.
+Add CNN news feed for collecting images in each articles.
 
 .. code-block:: python
 
@@ -145,7 +137,7 @@ If you want to get specified entry for debugging, please execute following comma
 
 ::
 
-    $ feedy main.py app --max-entries 2 --no-ignore-fetched
+    $ feedy main.py app -m 2 --no-ignore-fetched
     - [django-dynamic-views](http://www.djangopackages.com/packages/p/django-dynamic-views/)
     - [django-simple-address](http://www.djangopackages.com/packages/p/django-simple-address/)
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_money.png
@@ -155,7 +147,7 @@ And if you want to run only a cnn function, please execute:
 
 ::
 
-    $ feedy main.py app --max-entries 2 --no-ignore-fetched --target cnn
+    $ feedy main.py app -m 2 --no-ignore-fetched --target cnn
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_money.png
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_style.png
 
@@ -163,10 +155,10 @@ And if you want to run only a cnn function, please execute:
 After that, please execute a following command:
 
 
-4. Use plugins
---------------
+4. Using plugins
+----------------
 
-You can easy developing by using plugins.
+You can easy developing by using feedy's plugins.
 For example, you can get shared count in social sns like facebook and pocket.
 There are two ways for applying the plugin.
 
