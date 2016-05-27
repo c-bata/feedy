@@ -5,6 +5,11 @@ from bs4 import BeautifulSoup
 feedy = Feedy('feedy.dat')
 
 
+@feedy.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
+def djangopackages(info, body):
+    print("- [%s](%s)" % (info['article_title'], info['article_url']))
+
+
 @feedy.add('http://rss.cnn.com/rss/edition.rss')
 def cnn(info, body):
     soup = BeautifulSoup(body, "html.parser")
@@ -22,11 +27,6 @@ def cnn_shared(info, body, social_count):
         'facebook': social_count['facebook_count'],
     }
     print(article)
-
-
-@feedy.add('https://www.djangopackages.com/feeds/packages/latest/rss/')
-def djangopackages(info, body):
-    print("- [{pkgname}]({link})".format(pkgname=info['article_title'], link=info['article_url']))
 
 if __name__ == '__main__':
     feedy.run()
