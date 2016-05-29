@@ -2,6 +2,9 @@
 Feedy
 =====
 
+.. image:: https://raw.githubusercontent.com/c-bata/feedy/master/feedy.png
+   :alt: feedy's logo
+
 Simple RSS Feed Fetching Framework.
 
 * Decorator based feed fetcher.
