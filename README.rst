@@ -16,7 +16,7 @@ Simple RSS Feed Fetching Framework.
 Installation
 ============
 
-Supported python version is Python3.4 later.
+Supported python version is 3.4 or later.
 
 ::
 
