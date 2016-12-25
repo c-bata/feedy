@@ -18,7 +18,7 @@ Installation
 
 Supported python version is 3.6 or later.
 
-::
+.. code-block:: console
 
     pip install feedy
 
@@ -47,7 +47,7 @@ Creating ``main.py`` like:
 
 And running:
 
-::
+.. code-block:: console
 
     $ python main.py
     - [django-dynamic-views](http://www.djangopackages.com/packages/p/django-dynamic-views/)
@@ -57,7 +57,7 @@ And running:
 
 After that please execute again.
 
-::
+.. code-block:: console
 
     $ python main.py
     # No output
@@ -95,7 +95,7 @@ Add CNN news feed for collecting images in each articles.
 
 And running:
 
-::
+.. code-block:: console
 
     $ python main.py
     - [django-dynamic-views](http://www.djangopackages.com/packages/p/django-dynamic-views/)
@@ -117,31 +117,29 @@ Feedy offers command line interface. It's useful for debugging
 
 **help messages**
 
-::
+.. code-block:: console
 
-    $ feedy --help
-    Usage: feedy [OPTIONS] SRC OBJ
+   $ feedy --help
+   Usage: feedy [OPTIONS] FILEPATH
 
-      Run your feedy's project flexibly.
+     Run your feedy's project flexibly.
 
-    Options:
-      -v, --verbose                   Set log level
-      -t, --targets TEXT              The target function names.
-      -s, --store TEXT                A filename for store the last fetched time
-                                      each RSS feed.
-      -m, --max-entries INTEGER       The maximum length for fetching entries
-                                      every RSS feed
-      --ignore-fetched / --no-ignore-fetched
-                                      The maximum length for fetching entries
-                                      every RSS feed
-      --help                          Show this message and exit.
+   Options:
+     -v, --verbose                   Set log level
+     -t, --targets TEXT              The target function names.
+     -m, --max-entries INTEGER       The maximum length for fetching entries
+                                     every RSS feed
+     --ignore-fetched / --no-ignore-fetched
+                                     The maximum length for fetching entries
+                                     every RSS feed
+     --help                          Show this message and exit.
 
 
 If you want to get specified entry for debugging, please execute following command:
 
-::
+.. code-block:: console
 
-    $ feedy main.py app -m 2 --no-ignore-fetched
+    $ feedy main.py -m 2 --no-ignore-fetched
     - [django-dynamic-views](http://www.djangopackages.com/packages/p/django-dynamic-views/)
     - [django-simple-address](http://www.djangopackages.com/packages/p/django-simple-address/)
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_money.png
@@ -149,9 +147,9 @@ If you want to get specified entry for debugging, please execute following comma
 
 And if you want to run only a cnn function, please execute:
 
-::
+.. code-block:: console
 
-    $ feedy main.py app -m 2 --no-ignore-fetched --target cnn
+    $ feedy main.py -m 2 --no-ignore-fetched --target cnn
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_money.png
     http://i.cdn.turner.com/cnn/.e1mo/img/4.0/logos/menu_style.png
 
@@ -185,9 +183,9 @@ There are two ways for applying the plugin.
 
 And running:
 
-::
+.. code-block:: console
 
-    $ feedy main.py app -t cnn_shared -m 2
+    $ feedy main.py -t cnn_shared -m 2
     {'title': 'Searchers locate Flight 804, EgyptAir vice chairman says', 'pocket': 4, 'facebook': 25}
     {'title': 'Security fears over French airports', 'pocket': 2, 'facebook': 9}
 

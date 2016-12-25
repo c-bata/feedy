@@ -1,17 +1,20 @@
 import asyncio
-import types
+import os
 import shelve
+import sys
+from importlib.machinery import SourceFileLoader
 from datetime import datetime
 from time import mktime
-from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, ERROR
+from logging import getLogger, StreamHandler, Formatter, INFO, DEBUG, WARNING, ERROR, Logger
 from functools import wraps
+from typing import Tuple, Dict, Any
 
 import aiohttp
 import click
 import feedparser
 
 # Default run parameters #######################################
-DEFAULT_RUN_PARAMS = {
+DEFAULT_RUN_PARAMS: Dict[str, Any] = {
     'targets': None,
     'max_entries': None,
     'ignore_fetched': False,
@@ -20,7 +23,7 @@ DEFAULT_RUN_PARAMS = {
 
 
 # Logger settings        #######################################
-def _create_logger(name):
+def _create_logger(name: str) -> Logger:
     formatter = Formatter('[%(levelname)s] %(message)s')
     sh = StreamHandler()
     sh.setFormatter(formatter)
@@ -28,19 +31,19 @@ def _create_logger(name):
     logger.addHandler(sh)
     return logger
 
-logger = _create_logger(__name__)
+logger: Logger = _create_logger(__name__)
 
 
 # Shelve store            ########################################
 class ShelveStore:
-    def __init__(self, file_path):
+    def __init__(self, file_path: str) -> None:
         self.file_path = file_path
 
-    def update_or_create(self, key, value):
+    def update_or_create(self, key: str, value: Any) -> None:
         with shelve.open(self.file_path) as db:
             db[key] = value
 
-    def load(self, key):
+    def load(self, key: str) -> Any:
         with shelve.open(self.file_path) as db:
             return db.get(key, None)
 
@@ -175,24 +178,27 @@ class Feedy:
 
 
 # Command Line Interface ######################################################
-def _get_runner(src, obj):
-    t = types.ModuleType('runner')
-    with src as mod:
-        t.__dict__['__file__'] = src.name
-        compiled = compile(mod.read(), src.name, 'exec')
-        exec(compiled, t.__dict__)
-    runner = getattr(t, obj)
-    return runner
+def insert_import_path_to_sys_modules(import_path):
+    """
+    When importing a module, Python references the directories in sys.path.
+    The default value of sys.path varies depending on the system, But:
+    When you start Python with a script, the directory of the script is inserted into sys.path[0].
+    So we have to replace sys.path to import object in specified scripts.
+    """
+    abspath = os.path.abspath(import_path)
+    if os.path.isdir(abspath):
+        sys.path.insert(0, abspath)
+    else:
+        sys.path.insert(0, os.path.dirname(abspath))
 
 
-def set_logger_level(verbose):
-    logger_level = (ERROR, WARNING, INFO, DEBUG)
+def set_logger_level(verbose: int):
+    logger_level: Tuple(int) = (ERROR, WARNING, INFO, DEBUG)
     logger.setLevel(logger_level[verbose])
 
 
 @click.command()
-@click.argument('src', type=click.File('r'), nargs=1)
-@click.argument('obj', nargs=1)
+@click.argument('filepath', nargs=1, type=click.Path(exists=True))
 @click.option('-v', '--verbose', type=click.IntRange(0, 3), count=True, help='Set log level')
 @click.option('-t', '--targets', type=str, multiple=True, default=DEFAULT_RUN_PARAMS['targets'],
               help='The target function names.')
@@ -200,8 +206,17 @@ def set_logger_level(verbose):
               help="The maximum length for fetching entries every RSS feed")
 @click.option('--ignore-fetched/--no-ignore-fetched', default=DEFAULT_RUN_PARAMS['ignore_fetched'],
               help="The maximum length for fetching entries every RSS feed")
-def cmd(src, obj, verbose, **kwargs):
+def cmd(filepath: str, verbose: int, **kwargs) -> None:
     """Run your feedy's project flexibly."""
     set_logger_level(verbose)
-    runner = _get_runner(src, obj)
-    runner.run(**kwargs)
+
+    insert_import_path_to_sys_modules(os.path.abspath(filepath))
+    module = SourceFileLoader('module', filepath).load_module()
+    for objname in dir(module):
+        obj = getattr(module, objname)
+        if isinstance(obj, Feedy):
+            break
+    else:
+        click.secho("Feedy's instance is not found.", fg='red')
+        sys.exit(status=1)
+    obj.run(**kwargs)
