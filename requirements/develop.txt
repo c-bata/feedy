@@ -1,0 +1,7 @@
+# for debugging
+ipython
+ipdb
+
+# for testing
+mypy
+flake8
