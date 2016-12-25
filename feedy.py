@@ -193,7 +193,7 @@ def insert_import_path_to_sys_modules(import_path):
 
 
 def set_logger_level(verbose: int):
-    logger_level: Tuple(int) = (ERROR, WARNING, INFO, DEBUG)
+    logger_level: Tuple[int] = (ERROR, WARNING, INFO, DEBUG)
     logger.setLevel(logger_level[verbose])
 
 

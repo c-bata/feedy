@@ -263,6 +263,12 @@ To write a new plugin, simply create decorator like:
 Happy hacking :)
 
 
+Development
+===========
+
+- type checking: `mypy --fast-parser --python-version 3.6 feedy.py feedy_utils feedy_plugins`
+- lint: `flake8 feedy.py feedy_utils feedy_plugins`
+
 Resources
 =========
 
