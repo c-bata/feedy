@@ -18,8 +18,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     packages=['feedy_plugins', 'feedy_utils'],
     py_modules=['feedy'],
@@ -34,4 +33,3 @@ setup(
     include_package_data=True,
     test_suite="tests",
 )
-
